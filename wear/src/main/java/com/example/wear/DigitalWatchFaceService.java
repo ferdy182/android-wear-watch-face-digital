@@ -51,6 +51,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
     private final SimpleDateFormat mDateFormat = new SimpleDateFormat("c dd MMM");
     private boolean mRegisteredZoneReceiver;
 
+    float textSize = 75f;
 
     @Override
     public Engine onCreateEngine() {
@@ -69,12 +70,12 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case  MSG_UPDATE_TIME:
-                        Log.i("watch","message handled. timer "+shouldTimeBeRunning());
                         invalidate();
                         if(shouldTimeBeRunning()) {
                             long timeMs = System.currentTimeMillis();
                             long delayMs = NORMAL_UPDATE_RATE_MS - (timeMs % NORMAL_UPDATE_RATE_MS);
                             mUdateTimerHandler.sendEmptyMessageAtTime(MSG_UPDATE_TIME, delayMs);
+                            //Log.i("watch","message handled. timer "+shouldTimeBeRunning()+" delayMs "+delayMs);
                         }
                         break;
                 }
@@ -87,7 +88,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             /* initialize your watch face */
             fontPaint.setTypeface(Typefaces.get(getApplicationContext(), "font/digital.ttf"));
-            fontPaint.setTextSize(100f);
+            fontPaint.setTextSize(textSize);
 //            fontPaint.setTextAlign(Paint.Align.CENTER);
             mTime = new Time();
             mDate = new Date();
@@ -130,6 +131,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
+            Log.d("FACE","onDraw");
             /* draw your watch face */
             if(isInAmbientMode()) {
                 fontPaint.setColor(Color.LTGRAY);
@@ -145,24 +147,35 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
             int height = bounds.height();
 
             boolean drawColon = (System.currentTimeMillis() % 1000 < 500) || isInAmbientMode();
+            Log.i("FACE","draw colon " + String.valueOf(drawColon));
 
             float x = getResources().getDimension(R.dimen.offset_x_square);
             float y = height/2f;
             String hourString = String.format("%02d",mTime.hour);
             String minuteString = String.format("%02d",mTime.minute);
+            String secondString = String.format("%02d", mTime.second);
 
-            canvas.drawText(hourString, x, y, fontPaint);
-            x += fontPaint.measureText(hourString);
-            if(drawColon)
-                canvas.drawText(":", x, y, fontPaint);
-            x += fontPaint.measureText(":");
+            String timeString = String.format("%s:%s:%s",hourString,minuteString,secondString);
+            if(!drawColon)
+                timeString = String.format("%s %s %s",hourString,minuteString,secondString);
 
-            canvas.drawText(minuteString, x,y,fontPaint);
+            float measuredWitdh = fontPaint.measureText(timeString);
+            fontPaint.setTextAlign(Paint.Align.CENTER);
 
-            if(!isInAmbientMode()) {
-                x += fontPaint.measureText(minuteString);
-                canvas.drawText(String.format(":%02d",mTime.second),x,y,fontPaint);
-            }
+            canvas.drawText(timeString, width/2, height/2, fontPaint);
+
+//            canvas.drawText(hourString, x, y, fontPaint);
+//            x += fontPaint.measureText(hourString);
+//            if(drawColon)
+//                canvas.drawText(":", x, y, fontPaint);
+//            x += fontPaint.measureText(":");
+//
+//            canvas.drawText(minuteString, x,y,fontPaint);
+//
+//            if(!isInAmbientMode()) {
+//                x += fontPaint.measureText(minuteString);
+//                canvas.drawText(String.format(":%02d",mTime.second),x,y,fontPaint);
+//            }
         }
 
         @Override
