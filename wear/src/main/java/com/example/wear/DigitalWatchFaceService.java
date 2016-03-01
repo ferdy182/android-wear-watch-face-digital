@@ -42,7 +42,9 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
 
     Time mTime;
     Date mDate;
+    String mBattery;
     Paint fontPaint = new Paint();
+    Paint mBatteryPaint = new Paint();
     int fontColor = Color.argb(255,43,43,43);
     int bgColor = Color.argb(255,147,177,162);
     boolean mLowBitAmbient;
@@ -100,7 +102,22 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
                     .build()
             );
 
+            mBatteryPaint = new Paint();
+            mBatteryPaint = createTextPaint(resources.getColor(R.color.digital_battery_text));
 
+            float batterySize = resources.getDimension(isRound
+                    ? R.dimen.digital_battery_size_round : R.dimen.digital_battery_size);
+            mBatteryPaint.setTextSize(batterySize);
+
+            mBattery = "100%";
+        }
+
+        private Paint createTextPaint(int textColor) {
+            Paint paint = new Paint();
+            paint.setColor(textColor);
+            paint.setTypeface(NORMAL_TYPEFACE);
+            paint.setAntiAlias(true);
+            return paint;
         }
 
         @Override
@@ -123,6 +140,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
             if(mLowBitAmbient) {
                 boolean antiAlias = !inAmbientMode;
                 fontPaint.setAntiAlias(antiAlias);
+                mBatteryPaint.setAntiAlias(antiAlias);
             }
 
             invalidate();
@@ -163,6 +181,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
             fontPaint.setTextAlign(Paint.Align.CENTER);
 
             canvas.drawText(timeString, width/2, height/2, fontPaint);
+            canvas.drawText(mBattery, width/2, height/2 + 50.0f, mBatteryPaint);
 
 //            canvas.drawText(hourString, x, y, fontPaint);
 //            x += fontPaint.measureText(hourString);
@@ -216,6 +235,7 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
 
         mRegisteredZoneReceiver = false;
         unregisterReceiver(mTimeZoneReceiver);
+        unregisterReceiver(mBatInfoReceiver);
     }
 
     private void registerReceiver() {
@@ -223,6 +243,8 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
             return;
         mRegisteredZoneReceiver = true;
         registerReceiver(mTimeZoneReceiver, new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED));
+        IntentFilter batteryFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(mBatInfoReceiver, batteryFilter);
     }
 
     /* receiver to update the time zone */
@@ -234,5 +256,11 @@ public class DigitalWatchFaceService extends CanvasWatchFaceService {
         }
     };
 
+    final BroadcastReceiver mBatInfoReceiver = new BroadcastReceiver(){
+        @Override
+        public void onReceive(Context arg0, Intent intent) {
+            mBattery = String.valueOf(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)) + "%";
+        }
+    };
 
 }
